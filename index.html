@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="sr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>NYC · Juni 2026</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #080810;
+    --surface: #0F0F1A;
+    --surface2: #161625;
+    --border: #1E1E30;
+    --text: #EDE9E3;
+    --muted: #6B6880;
+    --accent: #C8A96E;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  body { background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-serif; min-height: 100vh; overflow-x: hidden; }
+  #ambient { position: fixed; inset: 0; pointer-events: none; z-index: 0; transition: background 0.7s ease; }
+  .header { position: relative; z-index: 2; padding: 48px 24px 0; text-align: center; }
+  .header-eyebrow { font-size: 10px; letter-spacing: 5px; color: var(--muted); text-transform: uppercase; margin-bottom: 10px; }
+  .header-title { font-family: 'Playfair Display', serif; font-size: 34px; font-weight: 400; letter-spacing: -0.5px; line-height: 1; }
+  .header-title em { font-style: italic; color: var(--accent); }
+  .header-line { width: 36px; height: 1px; background: var(--accent); margin: 16px auto 0; transition: background 0.5s; }
+  .tabs-wrap { position: relative; z-index: 2; padding: 24px 16px 0; overflow-x: auto; display: flex; gap: 8px; scrollbar-width: none; }
+  .tabs-wrap::-webkit-scrollbar { display: none; }
+  .tab { flex-shrink: 0; width: 64px; padding: 10px 6px; border-radius: 14px; border: 1.5px solid var(--border); background: var(--surface); color: var(--muted); cursor: pointer; text-align: center; transition: all 0.25s; -webkit-appearance: none; }
+  .tab.active { border-color: var(--day-color, var(--accent)); background: color-mix(in srgb, var(--day-color, var(--accent)) 12%, var(--surface)); color: var(--day-color, var(--accent)); }
+  .tab-emoji { font-size: 20px; display: block; margin-bottom: 3px; }
+  .tab-num { font-size: 10px; display: block; }
+  .tab-date { font-size: 9px; display: block; opacity: 0.7; }
+  .day-card { position: relative; z-index: 2; margin: 16px 16px 0; background: var(--surface); border: 1px solid #1E1E30; border-radius: 18px; padding: 20px; transition: border-color 0.4s; }
+  .day-card-top { display: flex; justify-content: space-between; align-items: flex-start; }
+  .day-label-sm { font-size: 10px; letter-spacing: 3px; text-transform: uppercase; color: var(--accent); font-family: 'DM Sans', sans-serif; margin-bottom: 6px; transition: color 0.4s; }
+  .day-title { font-family: 'Playfair Display', serif; font-size: 22px; font-weight: 400; margin-bottom: 5px; }
+  .day-subtitle { font-size: 11px; color: var(--muted); line-height: 1.5; }
+  .day-badge { flex-shrink: 0; margin-left: 12px; font-size: 10px; padding: 4px 10px; border-radius: 20px; white-space: nowrap; transition: all 0.4s; }
+  .day-duration { font-size: 9px; color: #444; text-align: right; margin-top: 5px; }
+  .day-tip { margin-top: 14px; padding: 10px 12px; background: #0A0A12; border-radius: 10px; border-left: 2px solid var(--accent); font-size: 11px; color: #999; line-height: 1.6; transition: border-color 0.4s; }
+  .stops-list { position: relative; z-index: 2; padding: 16px 16px 80px; }
+  .stop-row { display: flex; gap: 10px; }
+  .stop-timeline { display: flex; flex-direction: column; align-items: center; width: 34px; flex-shrink: 0; }
+  .stop-dot { width: 34px; height: 34px; border-radius: 50%; background: var(--surface); border: 1.5px solid var(--border); display: flex; align-items: center; justify-content: center; font-size: 15px; flex-shrink: 0; z-index: 1; }
+  .stop-line { width: 1px; flex: 1; min-height: 16px; background: var(--border); }
+  .stop-content { flex: 1; padding-bottom: 10px; }
+  .stop-card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 12px 14px; cursor: pointer; width: 100%; text-align: left; transition: all 0.2s; -webkit-appearance: none; color: var(--text); }
+  .stop-card:active { transform: scale(0.98); }
+  .stop-card.open { background: var(--surface2); }
+  .stop-card-top { display: flex; justify-content: space-between; align-items: center; }
+  .stop-time { font-size: 10px; color: var(--muted); letter-spacing: 0.5px; margin-bottom: 3px; }
+  .stop-name { font-family: 'Playfair Display', serif; font-size: 14px; line-height: 1.3; color: var(--text); }
+  .stop-addr { font-size: 10px; color: #444; margin-top: 2px; }
+  .stop-chevron { font-size: 9px; color: #333; margin-left: 8px; flex-shrink: 0; transition: transform 0.2s; }
+  .stop-card.open .stop-chevron { transform: rotate(180deg); }
+  .stop-warning { margin-top: 8px; padding: 5px 8px; background: #1A1200; border-radius: 7px; font-size: 10px; color: #D97706; display: flex; align-items: center; gap: 5px; }
+  .stop-note { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border); font-size: 12px; color: #999; line-height: 1.7; display: none; }
+  .stop-card.open .stop-note { display: block; }
+  .footer { position: relative; z-index: 2; text-align: center; padding: 0 16px 40px; font-size: 9px; color: #222; letter-spacing: 2px; text-transform: uppercase; }
+  .maps-btn { display: flex; align-items: center; justify-content: center; gap: 8px; margin: 14px 0 0; padding: 10px 16px; background: #0A1A0A; border: 1px solid #1E3A1E; border-radius: 10px; color: #4CAF50; font-size: 11px; font-family: 'DM Sans', sans-serif; text-decoration: none; transition: all 0.2s; }
+  .maps-btn:active { transform: scale(0.97); background: #0F2A0F; }
+</style>
+</head>
+<body>
+<div id="ambient"></div>
+<header class="header">
+  <div class="header-eyebrow">New York City · Juni 2026</div>
+  <h1 class="header-title">NYC <em>Itinerar</em></h1>
+  <div class="header-line" id="hline"></div>
+</header>
+<div class="tabs-wrap" id="tabs"></div>
+<div class="day-card" id="dayCard">
+  <div class="day-card-top">
+    <div>
+      <div class="day-label-sm" id="dayLabel"></div>
+      <div class="day-title" id="dayTitle"></div>
+      <div class="day-subtitle" id="daySubtitle"></div>
+    </div>
+    <div style="text-align:right; flex-shrink:0; margin-left:12px">
+      <div class="day-badge" id="dayBadge"></div>
+      <div class="day-duration" id="dayDuration"></div>
+    </div>
+  </div>
+  <div class="day-tip" id="dayTip"></div>
+</div>
+<div class="stops-list" id="stopsList"></div>
+<div class="footer">Pripremljeno uz Claude · Anthropic</div>
+
+<script>
+const days = [
+  {
+    id:1, date:"1. juni", label:"Dan dolaska", emoji:"✈️",
+    subtitle:"Midtown · Bryant Park · Biblioteka · Eataly",
+    km:"~3 km", duration:"15:00 — 19:30", color:"#C8A96E",
+    tip:"Ne bori se s jet lagom — budi vani, ali idi spavati do 22h!",
+    maps:"https://www.google.com/maps/dir/The+Langham+New+York,+400+5th+Ave/New+York+Public+Library,+476+5th+Ave/Bryant+Park,+New+York/Eataly+NYC+Flatiron,+200+5th+Ave",
+    stops:[
+      {time:"~14:00", name:"The Langham NYC — check-in", addr:"400 5th Ave", icon:"🏨", warn:"Ako soba nije spremna — ostavi prtljag na recepciji i kreni odmah!", note:"Hotel je polazna tačka za sve dane. 5 min pješice od Bryant Parka."},
+      {time:"15:00", name:"New York Public Library", addr:"476 5th Ave", icon:"📚", note:"Besplatno! Raskošna čitaonica Rose Main Reading Room · lavovi Patience i Fortitude na ulazu. Otvoreno do 18h."},
+      {time:"15:45", name:"Bryant Park 🌳", addr:"Direktno iza biblioteke", icon:"🌿", note:"Zelene stolice, fontana, kafići. Uzmi kafu u Le Pain Quotidien ili kiosku u parku."},
+      {time:"17:30", name:"Eataly NYC Flatiron ★", addr:"200 5th Ave", icon:"🍝", note:"Italijanski tržni centar. Preporuka: La Pizza & La Pasta ili Il Pesce · vino uz večeru. Bez rezervacije za ranu večeru."},
+      {time:"~19:00", name:"Povratak u hotel", addr:"15 min pješice prema sjeveru", icon:"🚶", note:"Rano u krevet! Sutra je veliki dan — SoHo & TriBeCa."},
+    ]
+  },
+  {
+    id:2, date:"2. juni", label:"SoHo & TriBeCa", emoji:"🛍️",
+    subtitle:"SoHo Cast Iron · Ulla Johnson · Cipriani 14:00 · Osteria Carlina 19:30 · The Django 22:00",
+    km:"~6.5 km", duration:"09:30 — 23:00+", color:"#C04040",
+    tip:"Sva tri rezervisana ✅ Cipriani u 14h, Osteria Carlina u 19:30, The Django jazz u 22h!",
+    maps:"https://www.google.com/maps/dir/The+Langham+New+York,+400+5th+Ave/Greene+St+%26+Broome+St,+New+York/15+Bleecker+St,+New+York/Cipriani+Downtown,+376+West+Broadway/9+Jay+St,+New+York/Osteria+Carlina,+11+Varick+St/The+Django,+2+6th+Ave,+New+York",
+    stops:[
+      {time:"09:30", name:"The Langham — polazište", addr:"400 Fifth Avenue", icon:"🏨", note:"Krenite pešice niz 5th Ave prema jugu, pa Broadway. ~45 min kroz Flatiron i NoHo."},
+      {time:"10:15", name:"SoHo Cast Iron District 🏗️", addr:"Greene St & Broome St, SoHo", icon:"🏗️", note:"Najveća koncentracija liveno-gvozdenih fasada na svetu. Slobodna šetnja, bez ulaznice."},
+      {time:"11:00", name:"Ulla Johnson 👗", addr:"15 Bleecker St, SoHo/NoHo", icon:"👗", note:"Otvaraju tačno u 11h. Pet minuta pešice od Cast Iron Districta. Uzmite bar sat vremena."},
+      {time:"12:15", name:"SoHo slobodna šetnja", addr:"West Broadway, Prince St, Spring St", icon:"🚶", note:"Galerije, kafići, window shopping. Idealno pre ručka."},
+      {time:"14:00", name:"Cipriani Downtown 🥂 ✅", addr:"376 West Broadway, SoHo", icon:"🍽️", warn:"REZERVISANO u 14:00!", note:"Must-order: rigatoni alla vodka + bellini."},
+      {time:"16:15", name:"Staple Street Skybridge 📸", addr:"9 Jay St, TriBeCa", icon:"📸", note:"Pešice ~12 min od Ciprianija. Najfotogeničnija tačka TriBeCe — stari bolnički most između zgrada."},
+      {time:"16:45", name:"TriBeCa slobodna šetnja", addr:"Harrison St, Hudson St, Worth St", icon:"🚶", note:"Najtišiji i najlepši blokovi Menhetna. Ugodan tempo pred večeru — sačuvajte energiju!"},
+      {time:"19:30", name:"Osteria Carlina ⭐ 🍝 ✅", addr:"11 Varick St, TriBeCa", icon:"🍷", warn:"REZERVISANO u 19:30!", note:"Ocena 4.9★ Kuhinja iz Pijemonta, intimna atmosfera. Must-order: steak tartare, tagliatelle al tartufo."},
+      {time:"22:00", name:"The Django 🎷 ✅", addr:"Roxy Hotel, 2 6th Ave, TriBeCa", icon:"🎷", warn:"REZERVISANO u 22:00!", note:"Podzemni jazz klub sa svođenim plafonima i izloženim ciglenim zidovima. Pariski vibe. Cover $25, two-drink minimum."},
+    ]
+  },
+  {
+    id:3, date:"3. juni", label:"Brooklyn dan", emoji:"🌉",
+    subtitle:"Brooklyn Bridge · DUMBO · Juliana's · Green-Wood · Williamsburg",
+    km:"~18 km", duration:"08:30 — 23:30", color:"#B87333",
+    tip:"Uber nazad: Williamsburg → Langham ~20 min, oko $25–35. Francie — REZERVISANO!",
+    maps:"https://www.google.com/maps/dir/The+Langham+New+York,+400+5th+Ave/Brooklyn+Bridge,+New+York/Washington+St,+DUMBO,+Brooklyn/Brooklyn+Bridge+Park,+Brooklyn/Jane%27s+Carousel,+Brooklyn/Brooklyn+Heights+Promenade/Juliana%27s+Pizza,+Brooklyn/Green-Wood+Cemetery,+Brooklyn/Francie,+Brooklyn/Westlight,+111+N+12th+St,+Brooklyn",
+    stops:[
+      {time:"08:30", name:"Polazak — The Langham", addr:"400 Fifth Avenue", icon:"🏨", note:"Pešice niz 5th Ave i Broadway prema City Hall. Ugodan hod ~45 min."},
+      {time:"09:15", name:"Brooklyn Bridge — ulaz", addr:"Manhattan strana, City Hall", icon:"📍", note:"Kratka pauza pre prelaska. Prelepi pogled već sa prilaskom."},
+      {time:"09:30", name:"Brooklyn Bridge 🌁", addr:"Pješački prelaz", icon:"🌁", note:"~45 min hoda. Pogled na Manhattan skyline, East River i Kip Slobode. Jutarnje svetlo je savršeno."},
+      {time:"10:15", name:"DUMBO — Washington Street 📸", addr:"Washington St, DUMBO", icon:"📸", note:"Najikoničnija ulica u NYC. Manhattan Bridge uokviren između brownstone zgrada."},
+      {time:"10:45", name:"Pebble Beach — Brooklyn Bridge Park", addr:"Brooklyn Bridge Park", icon:"🏖️", note:"Šljunčana plaža između dva mosta. Direktan pogled na East River i Manhattan skyline."},
+      {time:"11:15", name:"Jane's Carousel 🎠", addr:"Brooklyn Bridge Park", icon:"🎠", warn:"Ne radi utorkom! Karta $3.", note:"Vintage karusel iz 1922. u staklenom paviljonu. Zatim šetnja duž waterfronta prema Pier 1."},
+      {time:"12:00", name:"Time Out Market Brooklyn ☕", addr:"Time Out Market", icon:"☕", note:"Ess-a-Bagel unutra za kafu i bagel. Rooftop terasa sa pogledom na oba mosta."},
+      {time:"12:45", name:"Brooklyn Heights Promenade", addr:"Brooklyn Heights", icon:"🌆", note:"Najlepši pogled na Manhattan skyline u celom Brooklynu. Mirno i bez turista radnim danom."},
+      {time:"13:30", name:"Juliana's Pizza 🍕", addr:"ispod Brooklyn Bridgea", icon:"🍕", warn:"Nema rezervacija — dođite tačno u 13:30!", note:"Kultna coal-fired pizza. Must: Margherita, white pizza, meatballs."},
+      {time:"15:15", name:"Green-Wood Cemetery 🌳", addr:"478 ha, Park Slope", icon:"🌳", note:"Leonard Bernstein i mnogi drugi. Brda, mauzolejumi, pogled na Manhattan. Uzmi mapu na ulazu! Besplatno, do 19h."},
+      {time:"19:00", name:"Francie ⭐ Michelin 🦆 ✅", addr:"Williamsburg", icon:"🍽️", warn:"REZERVISANO! Ne radi nedeljom.", note:"Must: roast duck, clam pasta, Roman Army sourdough. franciebrooklyn.com"},
+      {time:"21:15", name:"Westlight Rooftop 🌆", addr:"111 N 12th St, Brooklyn", icon:"🌃", note:"22. sprat William Vale hotela. Panorama Manhattana i Brooklyna. Do ponoći radnim danom."},
+      {time:"23:30", name:"Povratak — Uber 🚗", addr:"Williamsburg → Langham", icon:"🚗", note:"~20 min, oko $25–35."},
+    ]
+  },
+  {
+    id:4, date:"4. juni", label:"MoMA · Central Park · Met", emoji:"🎨",
+    subtitle:"MoMA · Central Park · Metropolitan Museum · Le Bernardin",
+    km:"~6 km", duration:"10:30 — 22:00", color:"#5B8A6A",
+    tip:"Lakši dan — ~6 km. Le Bernardin je 5 min od Langhama! Dress code: smart casual/formal.",
+    maps:"https://www.google.com/maps/dir/The+Langham+New+York,+400+5th+Ave/MoMA,+11+W+53rd+St/Central+Park,+59th+St+entrance/Metropolitan+Museum+of+Art,+1000+5th+Ave/Le+Bernardin,+155+W+51st+St",
+    stops:[
+      {time:"10:30", name:"MoMA — Museum of Modern Art 🖼️", addr:"11 W 53rd St, Midtown", icon:"🖼️", warn:"Kupi karte online unapred — u sezoni može biti red!", note:"Must: Van Gogh Zvezdana noć, Picasso, Dalí (5. sprat), Monet. Petkom do 20:30."},
+      {time:"13:00", name:"Central Park 🌳", addr:"Ulaz sa 59th St", icon:"🌿", note:"Lagana šetnja prema severu ka Metropolitenu. Sheep Meadow, The Mall, Bethesda Terrace usput."},
+      {time:"15:00", name:"Metropolitan Museum of Art 🏛️", addr:"1000 5th Ave", icon:"🏛️", warn:"Ne radi sredom! Petkom i subotom do 21h.", note:"Must: egipatska kolekcija, Temple of Dendur, evropsko slikarstvo. Ulaz sa bočne strane (bez reda!)"},
+      {time:"17:30", name:"Pešice do Langhama — niz 5th Ave", addr:"~3 km, ~35 min", icon:"🚶", note:"Prolaz pored Plaza Hotela i Central Park South. Presvlačenje i odmor pre večere."},
+      {time:"19:30", name:"Le Bernardin ⭐⭐⭐ 🐟 ✅", addr:"155 W 51st St", icon:"🐠", warn:"REZERVISANO! Ne radi nedeljom.", note:"3 Michelin zvezdice. Jedan od najboljih restorana u NYC-u. Must: tasting menu."},
+    ]
+  },
+  {
+    id:5, date:"5. juni", label:"Wall Street & West Village", emoji:"🏛️",
+    subtitle:"Financial District · Crown Shy 13:30 · West Village · L'Artusi 20:00 · Employees Only",
+    km:"~14 km + taxi", duration:"08:30 — 23:00+", color:"#4A8FC0",
+    tip:"Udobne cipele OBAVEZNO! Crown Shy u 13:30 ✅ Taxi do L'Artusija uveče ✅ L'Artusi u 20:00 ✅",
+    maps:"https://www.google.com/maps/dir/The+Langham+New+York,+400+5th+Ave/Flatiron+Building,+175+5th+Ave/Broadway+%26+Spring+St,+New+York/Trinity+Church,+89+Broadway/New+York+Stock+Exchange,+11+Wall+St/Crown+Shy,+70+Pine+St/Oculus,+185+Greenwich+St/9-11+Memorial,+180+Greenwich+St/The+Langham+New+York,+400+5th+Ave",
+    stops:[
+      {time:"08:30", name:"The Langham — polazak", addr:"400 5th Ave", icon:"🏨", note:"Start pješačke ture kroz Manhattan. Pješice niz 5th Ave prema jugu."},
+      {time:"09:00", name:"Flatiron Building", addr:"175 5th Ave", icon:"📍", warn:"Trenutno pod renovacijom", note:"Ikonična trokutasta zgrada — brza fotka i nastavi dalje."},
+      {time:"09:25", name:"SoHo — Broadway & Spring St", addr:"SoHo", icon:"🏗️", note:"Lijepa cast-iron arhitektura, jutarnji NYC vibe."},
+      {time:"09:40", name:"Tribeca", addr:"TriBeCa kvartal", icon:"🚶", note:"Jedan od najljepših kvartova u NYC-u."},
+      {time:"09:55", name:"Trinity Church ⛪", addr:"89 Broadway", icon:"⛪", note:"Crkva iz 1697. Ovdje je sahranjen Alexander Hamilton."},
+      {time:"10:15", name:"New York Stock Exchange", addr:"11 Wall St", icon:"💹", note:"Srce globalnih finansija — impresivna fasada."},
+      {time:"10:30", name:"Federal Hall National Memorial", addr:"26 Wall St", icon:"🏛️", warn:"Zatvoreno pon/uti!", note:"Washington je ovdje položio zakletvu."},
+      {time:"10:45", name:"The Fearless Girl", addr:"Broad St", icon:"👩", note:"Simbol ženskog osnaživanja — brza fotka."},
+      {time:"11:00", name:"Stone Street ☕ (35 min)", addr:"Stone St", icon:"☕", note:"Kaldrmisana ulica iz 17. vijeka · kafa ili vino · zasluženi odmak."},
+      {time:"11:40", name:"Charging Bull 🐂", addr:"Bowling Green", icon:"🐂", note:"Ikonična stanica — foto obavezna!"},
+      {time:"12:00", name:"Battery Park", addr:"Battery Park", icon:"🌊", note:"Šetnja uz vodu · pogled na Harbour i Kip slobode."},
+      {time:"12:35", name:"South Street Seaport", addr:"South St", icon:"⚓", note:"Najljepši waterfront u FiDi-ju."},
+      {time:"13:30", name:"Crown Shy ⭐ Michelin 🍽️", addr:"70 Pine St", icon:"🍽️", warn:"REZERVACIJA u 13:30!", note:"Moderni fine dining u FiDi-ju. Must-try: gnocchi · kruh · 1 glavno jelo. Ne prejedi se — čeka te večera!"},
+      {time:"15:00", name:"Oculus World Trade Center", addr:"185 Greenwich St", icon:"🕊️", note:"Arhitektura Santiaga Calatrawa · ulaz besplatan."},
+      {time:"15:30", name:"9/11 Memorial & Museum", addr:"180 Greenwich St", icon:"🕯️", warn:"Zatvoreno utorkom!", note:"Mirna, emotivna pauza. Vodeni bazeni na mjestima kula."},
+      {time:"16:15", name:"Odmor u hotelu (OBAVEZNO!)", addr:"The Langham", icon:"🛋️", note:"Povratak pješke ~45 min ili subway. Odmor i presvlačenje. Uveče taxi do L'Artusija — ~15 min, oko $15."},
+      {time:"20:00", name:"L'Artusi 🍝", addr:"228 W 10th St, West Village", icon:"🍷", warn:"REZERVACIJA u 20:00!", note:"Italijanski restoran. Must-try: garganelli · pasta za dijeljenje · olive oil cake · čaša vina."},
+      {time:"22:00", name:"Employees Only 🍸", addr:"510 Hudson St", icon:"🍸", note:"Speakeasy klasik · radi do 04:00! Kokteli: Employees Only Martini · Paper Plane · Whiskey/mezcal varijante."},
+    ]
+  },
+  {
+    id:6, date:"6. juni", label:"Chelsea & High Line", emoji:"🌿",
+    subtitle:"Chelsea · High Line · Meatpacking · Pastis 14:15 · RH Rooftop",
+    km:"~5.5 km", duration:"09:30 — 23:00+", color:"#8B6BB1",
+    tip:"Pastis — VEĆ ZAKAZANO u 14:15! RH Rooftop rezervisan u 21h ✅",
+    maps:"https://www.google.com/maps/dir/The+Langham+New+York,+400+5th+Ave/10th+Ave+%26+23rd+St,+New+York/Chelsea+Market,+75+9th+Ave/High+Line,+Gansevoort+St/Pastis,+52+Gansevoort+St/Little+Island,+Pier+55,+New+York/The+Langham+New+York,+400+5th+Ave/RH+Rooftop+Restaurant,+9+9th+Ave",
+    stops:[
+      {time:"09:30", name:"Langham — polazište 🚶", addr:"400 Fifth Avenue", icon:"🏨", note:"Krenite prema zapadu na 10th Ave, pa na jug kroz Hell's Kitchen. ~30 min do Chelsea."},
+      {time:"10:00", name:"Chelsea šetnja 🎨", addr:"23rd St & 10th Ave", icon:"🎨", note:"Setajte niz 10th Ave — galerije, kafići, lokalne prodavnice. Pravi njujorski kvartal bez turista."},
+      {time:"11:00", name:"Chelsea Market 🦞", addr:"75 Ninth Ave", icon:"🏪", note:"Los Tacos No.1, Seed+Mill za halvu i sladoled, The Lobster Place. Od 7h do 22h."},
+      {time:"12:00", name:"High Line 🌺", addr:"Ulaz: Gansevoort St kod 14th St", icon:"🌺", note:"Uđite na južnom ulazu i šetajte prema SEVERU. Vrtovi, instalacije, klupe sa pogledom na Hudson. Besplatan ulaz."},
+      {time:"13:15", name:"Meatpacking šetnja", addr:"Gansevoort St, Washington St", icon:"🚶", note:"Spustite se sa High Linea. Kaldrmisane ulice, dizajnerske prodavnice."},
+      {time:"14:15", name:"Pastis ★ REZERVISANO ✅", addr:"52 Gansevoort St, Meatpacking", icon:"🍷", warn:"VEĆ ZAKAZANO u 14:15!", note:"Klasični njujorski bistro, ocena 4.6. Must-order: entrecote steak, dirty martini, escargot."},
+      {time:"16:00", name:"Little Island 🏝️", addr:"Pier 55, Hudson River Park", icon:"🏝️", note:"Plutajući park, ocena 4.7, otvoren do 23h. Zalazak sunca nad rekom! Besplatan ulaz."},
+      {time:"18:30", name:"Povratak u hotel — pešice 🚶", addr:"Hudson River → The Langham", icon:"🚶", note:"Lagana šetnja nazad kroz Meatpacking i Chelsea. ~30 min. Odmor i presvlačenje pre večere."},
+      {time:"21:00", name:"RH Rooftop Restaurant 🥂 ✅", addr:"9 Ninth Ave, Meatpacking", icon:"🌆", warn:"REZERVISANO u 21:00!", note:"Stakleni lift do krova, lusteri, panorama grada. Must-order: truffle fries, branzino, creme brulee."},
+    ]
+  },
+  {
+    id:7, date:"7. juni", label:"West Village & MJ Musical", emoji:"🎭",
+    subtitle:"West Village · Little Ruby's · Washington Square · MJ Musical · Rum House",
+    km:"~11 km", duration:"10:00 — 00:00", color:"#D4A017",
+    tip:"MJ karte: broadway.com ili todaytix.com. Neil Simon Theatre je 10 min pešice od Langhama!",
+    maps:"https://www.google.com/maps/dir/The+Langham+New+York,+400+5th+Ave/Cafe+Luna,+628+Hudson+St/Washington+Square+Park,+New+York/Little+Ruby%27s,+225+W+4th+St/The+Langham+New+York,+400+5th+Ave/Neil+Simon+Theatre,+250+W+52nd+St/The+Rum+House,+228+W+47th+St",
+    stops:[
+      {time:"10:00", name:"Polazak — The Langham", addr:"400 Fifth Avenue", icon:"🏨", note:"Izađite na 5th Ave, skrenite levo (prema jugu). ~50 min, ~3.5 km do West Villagea."},
+      {time:"10:50", name:"Cafe Luna ☕", addr:"Hudson St 628", icon:"☕", note:"Odličan americano i lagane pastice. Otvoreno od 8h. Direktno na putu."},
+      {time:"11:15", name:"West Village šetnja 🏘️", addr:"Hudson St → Bleecker St → Christopher St", icon:"🏘️", note:"Najlepše kaldrmisane ulice u NYC-u. Brownstone kuće, boutique prodavnice, lokalni kafići."},
+      {time:"13:00", name:"Little Ruby's West Village 🥗", addr:"225 W 4th St", icon:"🥗", note:"Must: chicken avocado salad, burger sa truffle fries, iced latte. Bez rezervacije."},
+      {time:"14:30", name:"Washington Square Park + Bleecker St 🎸", addr:"Washington Square Park", icon:"🎸", note:"Slavoluk, fontana, NYU kampus. Zatim Bleecker St za boutique prodavnice i sladoledžinice."},
+      {time:"16:00", name:"Povratak u Langham — pešice", addr:"6th Ave prema severu, ~3.5 km", icon:"🚶", note:"~50 min. Odmor i presvlačenje. Dress code za MJ: casual je sasvim ok."},
+      {time:"17:30", name:"Chalong Southern Thai 🌶️ ✅", addr:"Hell's Kitchen", icon:"🍜", warn:"REZERVISANO u 17:30!", note:"Rana večera pre predstave. Autentična južno-tajlandska kuhinja. 5 min pešice od Neil Simon Theatrea."},
+      {time:"20:00", name:"★ MJ — The Musical 🎤", addr:"Neil Simon Theatre, 250 W 52nd St", icon:"🎤", warn:"Stignite 15 min pre početka!", note:"2h 30min sa pauzom. Više od 25 Jacksonovih hitova — Thriller, Billie Jean, Beat It, Smooth Criminal."},
+      {time:"22:30", name:"The Rum House 🥃", addr:"228 W 47th St", icon:"🥃", note:"Preko 180 vrsta ruma, live jazz, dimljeni kokteli. Ocena 4.4. Radi do 01h (petkom i subotom do 02h)."},
+      {time:"00:00", name:"Povratak u Langham 🌙", addr:"W 47th St → 5th Ave, ~1 km", icon:"🌙", note:"~15 min pešice. Direktno kući."},
+    ]
+  },
+  {
+    id:8, date:"8. juni", label:"Slobodan dan & Shopping", emoji:"🛒",
+    subtitle:"5th Ave · Madison Ave · SoHo · Bloomingdale's · Zaytinya 20:00 · Nubeluz 22:45",
+    km:"po želji", duration:"po volji", color:"#E91E8C",
+    tip:"Zaytinya i Nubeluz — oba rezervisana ✅ Nubeluz dress code: cocktail attire obavezan!",
+    maps:"https://www.google.com/maps/dir/The+Langham+New+York,+400+5th+Ave/Saks+Fifth+Avenue,+611+5th+Ave/Madison+Ave+%26+63rd+St,+New+York/Prince+St,+SoHo,+New+York/Bloomingdale%27s,+1000+3rd+Ave/The+Langham+New+York,+400+5th+Ave/Zaytinya,+New+York/Nubeluz,+25+W+28th+St",
+    stops:[
+      {time:"jutro", name:"Lagano jutro u hotelu", addr:"The Langham, 400 5th Ave", icon:"🛋️", note:"Kasno ustajanje, doručak u miru. Nema žurbe danas!"},
+      {time:"~11:00", name:"5th Avenue shopping 🛍️", addr:"5th Ave, Midtown", icon:"🛍️", note:"Saks Fifth Avenue, Bergdorf Goodman, Tiffany & Co, Cartier, Louis Vuitton — sve na jednom mestu. Najbogatija šoping ulica na svetu."},
+      {time:"~12:30", name:"Madison Avenue — luksuz 👜", addr:"Madison Ave, Upper East Side", icon:"👜", note:"Chanel, Hermès, Prada, Bottega Veneta. Za ozbiljne kupovine — ovo je prava adresa."},
+      {time:"~14:00", name:"Ručak — po izboru 🍽️", addr:"Gdje god poželiš!", icon:"🍽️", note:"Nema rezervacije, nema plana — uđi gdje ti se svidi. Midtown je pun odličnih opcija."},
+      {time:"~15:30", name:"SoHo — streetwear & dizajneri", addr:"Prince St, Spring St, West Broadway", icon:"🎨", note:"Acne Studios, APC, Kith, McNally Jackson knjižara, galerije. Mlađi, kreativniji vibe od Midtowna."},
+      {time:"~17:00", name:"Bloomingdale's 🏬", addr:"1000 3rd Ave", icon:"🏬", note:"Ikonična njujorška robna kuća. Odlično za kozmetiku, accessories i poklone za kući."},
+      {time:"~18:30", name:"Povratak u hotel — osvežavanje", addr:"The Langham, 400 5th Ave", icon:"🏨", note:"Odmor i presvlačenje pre večere."},
+      {time:"20:00", name:"Zaytinya 🫒 ✅", addr:"Midtown", icon:"🍽️", warn:"REZERVISANO u 20:00!", note:"José Andrés restoran. Mediteranska kuhinja — mezze, morski plodovi, povrće. Jedan od omiljenih restorana u NYC-u."},
+      {time:"22:45", name:"Nubeluz 🌆 ✅", addr:"Ritz-Carlton NoMad, 25 W 28th St, 50. sprat", icon:"🌃", warn:"REZERVISANO u 22:45!", note:"270-stepeni pogled na njujorški skyline sa 50. sprata. Glamurozni interijer. Dress code: cocktail attire obavezan!"},
+    ]
+  },
+  {
+    id:9, date:"9. juni", label:"Šetnja po centru & Grand Central", emoji:"🚂",
+    subtitle:"Grand Central · Oyster Bar · Don Angie · 230 Fifth Rooftop",
+    km:"~6 km", duration:"10:00 — 01:00+", color:"#607D8B",
+    tip:"Savršen zadnji dan! Don Angie rezerviši 2. juna u 9:00h tačno. Monarch Rooftop — rezerviši na sevenrooms.com!",
+    maps:"https://www.google.com/maps/dir/The+Langham+New+York,+400+5th+Ave/Bryant+Park,+New+York/New+York+Public+Library,+476+5th+Ave/Grand+Central+Terminal,+89+E+42nd+St/Oyster+Bar,+Grand+Central+Terminal/Chrysler+Building,+405+Lexington+Ave/The+Langham+New+York,+400+5th+Ave/Don+Angie,+103+Greenwich+Ave/Monarch+Rooftop,+71+W+35th+St",
+    stops:[
+      {time:"10:00", name:"Polazak — The Langham", addr:"400 5th Ave", icon:"🏨", note:"Lagan jutarnji start. Krenite pešice kroz Midtown — danas nema žurbe."},
+      {time:"10:15", name:"Bryant Park jutarnja kafa ☕", addr:"Iza New York Public Library", icon:"☕", note:"Le Pain Quotidien ili kiosk u parku. Savršeno mesto za jutarnju kafu na otvorenom."},
+      {time:"10:45", name:"New York Public Library 📚", addr:"476 5th Ave", icon:"📚", note:"Ne propusti Rose Main Reading Room. Besplatno, otvoreno od 10h."},
+      {time:"11:30", name:"Šetnja 5th Avenue 🗽", addr:"5th Ave, Midtown", icon:"🚶", note:"Rockefeller Center, St. Patrick's Cathedral, Atlas statue. Srce Midtowna."},
+      {time:"12:30", name:"Grand Central Terminal 🚂", addr:"89 E 42nd St", icon:"🚂", note:"Jedna od najlepših zgrada u NYC-u. Glavni konkorz sa zvezdanim plavim svodom je spektakl. Besplatan ulaz."},
+      {time:"13:30", name:"Ručak — Oyster Bar 🦪", addr:"Grand Central Terminal, donji nivo", icon:"🦪", note:"Kultni Oyster Bar otvoren od 1913. Must: New England clam chowder, fresh oysters. Dođi rano ili rezerviši."},
+      {time:"15:00", name:"Chrysler Building 📸", addr:"405 Lexington Ave", icon:"🏙️", note:"Art Deco remek-delo. Pogled spolja je dovoljan — impresivna fasada od nehrđajućeg čelika."},
+      {time:"15:30", name:"Last minute shopping 🛍️", addr:"Midtown / 5th Ave", icon:"🛍️", note:"Poslednja šansa za suvenire i poklone. Zara, H&M, Apple Store — sve tu."},
+      {time:"17:00", name:"Povratak u hotel & pakovanje 🏠", addr:"The Langham, 400 5th Ave", icon:"🏨", note:"Vreme za pakovanje i kratki odmor pre večere."},
+      {time:"19:30", name:"Don Angie 🍝", addr:"103 Greenwich Ave, West Village", icon:"🍽️", warn:"Rezervacija: OpenTable, stolovi izlaze u 9:00h, 7 dana unapred!", note:"Intimna italijansko-američka kuhinja. Must: pinwheel lasagna, chrysanthemum salad, funfetti cake. Dress code: smart casual."},
+      {time:"22:00", name:"230 Fifth Rooftop Bar 🌆", addr:"1150 Broadway, Flatiron", icon:"🌃", note:"Najveći rooftop bar u NYC-u. Walk-in uvek dobrodošao, bez rezervacije. Direktan pogled na Empire State Building. Radi do 01:30h. Savršen kraj putovanja! 🗽"},
+    ]
+  },
+];
+
+let activeDay = 0;
+let openStop = null;
+
+function hexToRgba(hex, a) {
+  const r = parseInt(hex.slice(1,3),16);
+  const g = parseInt(hex.slice(3,5),16);
+  const b = parseInt(hex.slice(5,7),16);
+  return `rgba(${r},${g},${b},${a})`;
+}
+
+function renderTabs() {
+  const wrap = document.getElementById('tabs');
+  wrap.innerHTML = days.map((d,i) => `
+    <button class="tab${i===activeDay?' active':''}" style="--day-color:${d.color}" onclick="selectDay(${i})">
+      <span class="tab-emoji">${d.emoji}</span>
+      <span class="tab-num">Dan ${d.id}</span>
+      <span class="tab-date">${d.date}</span>
+    </button>
+  `).join('');
+}
+
+function renderDayCard() {
+  const d = days[activeDay];
+  document.getElementById('dayLabel').textContent = `${d.date} · Dan ${d.id}`;
+  document.getElementById('dayTitle').textContent = d.label;
+  document.getElementById('daySubtitle').textContent = d.subtitle;
+  document.getElementById('dayBadge').textContent = d.km;
+  document.getElementById('dayDuration').textContent = d.duration;
+  document.getElementById('dayTip').textContent = '💡 ' + d.tip;
+  document.querySelector('.day-card').style.borderColor = hexToRgba(d.color, 0.3);
+  document.querySelector('.day-label-sm').style.color = d.color;
+  const badge = document.getElementById('dayBadge');
+  badge.style.background = hexToRgba(d.color, 0.15);
+  badge.style.color = d.color;
+  document.querySelector('.day-tip').style.borderLeftColor = d.color;
+  document.getElementById('hline').style.background = d.color;
+  document.getElementById('ambient').style.background = `radial-gradient(ellipse at 50% 0%, ${hexToRgba(d.color, 0.08)} 0%, transparent 65%)`;
+  // Maps button
+  const existingBtn = document.getElementById('mapsBtn');
+  if (existingBtn) existingBtn.remove();
+  if (d.maps) {
+    const btn = document.createElement('a');
+    btn.id = 'mapsBtn';
+    btn.href = d.maps;
+    btn.target = '_blank';
+    btn.className = 'maps-btn';
+    btn.innerHTML = '🗺️ Otvori rutu u Google Maps';
+    document.getElementById('dayCard').appendChild(btn);
+  }
+}
+
+function renderStops() {
+  const d = days[activeDay];
+  const list = document.getElementById('stopsList');
+  list.innerHTML = d.stops.map((s, i) => {
+    const isLast = i === d.stops.length - 1;
+    return `
+    <div class="stop-row">
+      <div class="stop-timeline">
+        <div class="stop-dot">${s.icon}</div>
+        ${!isLast ? '<div class="stop-line"></div>' : ''}
+      </div>
+      <div class="stop-content">
+        <button class="stop-card" id="stop-${i}" onclick="toggleStop(${i})">
+          <div class="stop-card-top">
+            <div style="flex:1">
+              <div class="stop-time">${s.time}</div>
+              <div class="stop-name">${s.name}</div>
+              <div class="stop-addr">${s.addr}</div>
+            </div>
+            <div class="stop-chevron">▼</div>
+          </div>
+          ${s.warn ? `<div class="stop-warning">⚠️ ${s.warn}</div>` : ''}
+          <div class="stop-note">${s.note}</div>
+        </button>
+      </div>
+    </div>
+  `}).join('');
+}
+
+function toggleStop(i) {
+  const card = document.getElementById('stop-' + i);
+  if (openStop === i) {
+    card.classList.remove('open');
+    openStop = null;
+  } else {
+    if (openStop !== null) {
+      const prev = document.getElementById('stop-' + openStop);
+      if (prev) prev.classList.remove('open');
+    }
+    card.classList.add('open');
+    openStop = i;
+    setTimeout(() => card.scrollIntoView({behavior:'smooth', block:'nearest'}), 50);
+  }
+}
+
+function selectDay(i) {
+  activeDay = i;
+  openStop = null;
+  renderTabs();
+  renderDayCard();
+  renderStops();
+  window.scrollTo({top: 0, behavior: 'smooth'});
+}
+
+renderTabs();
+renderDayCard();
+renderStops();
+</script>
+</body>
+</html>
